@@ -29,28 +29,22 @@ def download(url, directory, driver):
 	time.sleep(10)
 
 	driver.get(url)
-	with open ("fileStructure.csv", "w") as file:
+	with open (directory + "fileStructure.csv", "w") as file:
 		writer = csv.writer(file)
 		while(True):
 			element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME,"file-listing__item")))
 			# time.sleep(5)
-			print(element)
-			# print(driver)
-			print(element.text)
+			# print(element)
+			# # print(driver)
+			# print(element.text)
 			file = driver.find_element(By.CLASS_NAME, "file-listing__item").text.split('\n')
 			files_readable.append(file[0]) #Root
 			stack.append(driver.find_element(By.CLASS_NAME, "file-listing__item")) #Root
 			writer.writerow([str(file[0])])
-
 			actions.move_to_element(element).double_click().perform()
+			print("download loop")
 			driver, cookies, writer, stack, files_readable = getFileStructure(element, driver, writer, stack, files_readable)
-		
-			# print("Check element")
-			# element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME,"_yb_r6jeh")))
-			# print("element found", element)
-			# getFileStructure(element, driver)
-
-
+			exit(1)
 def getFileStructure(element, driver, writer, stack, files_readable):
 	actions = ActionChains(driver)
 	#get cookies
@@ -65,14 +59,14 @@ def getFileStructure(element, driver, writer, stack, files_readable):
 		elements = driver.find_elements(By.CLASS_NAME,"file-listing__item")
 		#apply each file to stack
 		for i in elements:
-			print("element:", i.text)
+			# print("element:", i.text)
 			file = i.text.split('\n')
 			files_readable.append(file[0])
 			stack.append(i)
 			writer.writerow([str(file[0])])
 
-		print('-------------------------------------------')
-		print("The Stack: ", stack, files_readable)
+		# print('-------------------------------------------')
+		# print("The Stack: ", stack, files_readable)
 		print('-------------------------------------------')
 		print("The readable: ", files_readable)
 		print('-------------------------------------------')
@@ -86,8 +80,10 @@ def getFileStructure(element, driver, writer, stack, files_readable):
 		# driver.find_element(By.CLASS_NAME,"file-listing__pagination")
 		# element = driver.find_element(By.CLASS_NAME,"on-end")
 		element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "on-end")))
-		print(element.text)
+		# print(element.text)
+		print("Try to click on-end")
 		if element.text == "disabled":
+			print("Disabled", element.text)
 			for first_out in files_readable[::-1]:
 				first_out_element = stack.pop()
 				if re.search(r'\.*', first_out):
@@ -97,15 +93,16 @@ def getFileStructure(element, driver, writer, stack, files_readable):
 					#Go into the folder.
 					# element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "file-listing__item")))
 					actions.move_to_element(first_out_element).click().perform()
-					getFileStructure(element, driver, writer, stack, files_readable)
+					getFileList(element, driver, writer, stack, files_readable)
 
 			for i in elements[::-1]:
-				print(i)
+				# print("element i: ", i)
 				actions.move_to_element(element).double_click().perform()
 				driver, cookies, writer, stack, files_readable = getFileList(element, driver, cookies, writer, stack, files_readable)
 
 				stack.pop()
 		else:
+			print("enabled click", element.text)
 			actions.move_to_element(element).click().perform()
 	except TimeoutException as e:
 		element = -1
@@ -114,9 +111,10 @@ def getFileStructure(element, driver, writer, stack, files_readable):
 		element = -1
 		print("No futher pages",element.text)
 	finally:
-
-		return driver, cookies, writer, stack, files_readable
-		
+		if len(stack) == 0:
+			return driver, cookies, writer, stack, files_readable
+		else:
+			getFileStructure(element, driver, writer, stack, files_readable)
 
 def getFileList(element, driver, cookies, writer, stack, files_readable):
 	print('-------------------------------------------')
@@ -126,6 +124,7 @@ def getFileList(element, driver, cookies, writer, stack, files_readable):
 	try:
 		# driver.find_element(By.CLASS_NAME,"file-listing__pagination")
 		# element = driver.find_element(By.CLASS_NAME,"on-end")
+		print("")
 		element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "back-one-page")))
 		actions.move_to_element(element).click().perform()
 	except TimeoutException as e:
@@ -166,7 +165,6 @@ def getFileList(element, driver, cookies, writer, stack, files_readable):
 			print("No futher pages",element.text)
 		finally:
 			return driver, cookies, writer, stack, files_readable
-
 
 
 
